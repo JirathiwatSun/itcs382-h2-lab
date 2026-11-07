@@ -1,0 +1,4 @@
+-cp target/lib/h2-2.5.252.jar
+org.h2.tools.Shell
+-url jdbc:h2:./data/parcelpoint
+-user sa
