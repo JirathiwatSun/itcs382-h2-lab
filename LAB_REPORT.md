@@ -104,11 +104,11 @@ flowchart TB
     service
     domain
     storage["storage, accesses the data store"]
+    cli --> service
+    cli --> domain
     parcelpoint --> cli
     parcelpoint --> service
     parcelpoint --> storage
-    cli --> service
-    cli --> domain
     service --> domain
     service --> storage
     storage --> domain
@@ -122,38 +122,16 @@ A2 Complete the class diagram of the data management layer with ParcelService, t
 
 ```mermaid
 classDiagram
-    class ParcelService {
-        -List~Locker~ lockers
-        +ParcelService(ParcelRepository repository)
-        +store(Parcel parcel) Optional~Locker~
-        +pickUp(String code, int days) Optional~Double~
-        +find(String code) Optional~Parcel~
-        +allParcels() List~Parcel~
-        +countFreeLockers() long
-    }
+    class ParcelService
     class ParcelRepository {
         <<interface>>
-        +save(Parcel parcel) void
+        +save(Parcel parcel)
         +findByCode(String code) Optional~Parcel~
         +findAll() List~Parcel~
     }
-    class InMemoryParcelRepository {
-        -Map~String, Parcel~ parcels
-        +save(Parcel parcel) void
-        +findByCode(String code) Optional~Parcel~
-        +findAll() List~Parcel~
-    }
-    class H2ParcelRepository {
-        -String CREATE_TABLE$
-        -String url
-        +H2ParcelRepository(String path)
-        +save(Parcel parcel) void
-        +findByCode(String code) Optional~Parcel~
-        +findAll() List~Parcel~
-        -connect() Connection
-        -toParcel(ResultSet row) Parcel
-    }
-    ParcelService --> "1" ParcelRepository : repository
+    class InMemoryParcelRepository
+    class H2ParcelRepository
+    ParcelService --> ParcelRepository
     ParcelRepository <|.. InMemoryParcelRepository
     ParcelRepository <|.. H2ParcelRepository
 ```
@@ -169,19 +147,13 @@ sequenceDiagram
     participant parcel as :Parcel
     participant repository as :ParcelRepository
     Staff->>cli: store P1003 S1003 MEDIUM
-    cli->>parcel: Parcel("P1003", "S1003", MEDIUM)
     cli->>service: store(parcel)
-    loop each locker, until one fits
+    loop each locker until one fits
         service->>locker: fits(parcel)
-        locker-->>service: false for locker 1, true for locker 2
     end
     service->>locker: setParcel(parcel)
     service->>parcel: storeIn(2)
     service->>repository: save(parcel)
-    service-->>cli: Optional of locker 2
-    cli->>locker: getNumber()
-    locker-->>cli: 2
-    cli-->>Staff: Parcel P1003 is in locker 2
 ```
 
 Explain why the last lifeline is the interface ParcelRepository rather than H2ParcelRepository.
