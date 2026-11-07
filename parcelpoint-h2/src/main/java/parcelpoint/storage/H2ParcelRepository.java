@@ -73,9 +73,18 @@ public class H2ParcelRepository implements ParcelRepository {
 
     @Override
     public List<Parcel> findAll() {
-        // TODO Step 0.11: read every row of the PARCEL table as findByCode does,
-        // TODO turn each row into a Parcel with toParcel, and return the list.
-        return List.of();
+        String sql = "SELECT * FROM PARCEL ORDER BY CODE";
+        List<Parcel> parcels = new ArrayList<>();
+        try (Connection connection = connect();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet row = statement.executeQuery()) {
+            while (row.next()) {
+                parcels.add(toParcel(row));
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Cannot read the parcels", e);
+        }
+        return parcels;
     }
 
     private Parcel toParcel(ResultSet row) throws SQLException {
