@@ -166,9 +166,9 @@ sequenceDiagram
     participant cli as :ParcelCommandLine
     participant service as :ParcelService
     participant locker as :Locker
+    participant parcel as :Parcel
     participant repository as :ParcelRepository
     Staff->>cli: store P1003 S1003 MEDIUM
-    create participant parcel as :Parcel
     cli->>parcel: Parcel("P1003", "S1003", MEDIUM)
     cli->>service: store(parcel)
     loop each locker, until one fits
@@ -196,15 +196,15 @@ To switch the store I changed only `Main.java`, two lines: the import and `new H
 
 2. The PARCEL table stores the size of a parcel as SMALL, MEDIUM or LARGE rather than as 1, 2 or 3. Identify the type of connascence between ParcelSize and the table in each case, and explain which one is weaker.
 
-Storing the names gives connascence of name: `save` writes `getSize().name()` and `toParcel` reads it back with `ParcelSize.valueOf`, so both sides only have to agree on the names of the constants. Storing 1, 2 or 3 gives connascence of convention, because both sides must agree that 1 stands for SMALL, and if the number came from `ordinal()` it would also be connascence of position on the order in which the constants are declared. Connascence of name is weaker. The values are readable in the H2 Shell, and adding or reordering constants does not change the meaning of rows already stored. A renamed constant fails loudly in `valueOf`, while a reordered enum with numbers would silently turn every stored SMALL into another size.
+Storing the names gives connascence of name, because `save` writes `getSize().name()` and `toParcel` reads it back with `ParcelSize.valueOf`, so both sides only have to agree on the names of the constants. Storing 1, 2 or 3 gives connascence of convention, because both sides must agree that 1 stands for SMALL, and if the number came from `ordinal()` it would also be connascence of position on the order in which the constants are declared. Connascence of name is weaker, because the values are readable in the H2 Shell and adding or reordering constants does not change the meaning of rows already stored. A renamed constant fails loudly in `valueOf`, while a reordered enum stored as numbers would silently turn every stored SMALL into another size.
 
 3. Project Phase 2 asks for a data store that needs no separate server. Explain why an embedded database such as H2 meets this rule, and describe the limit of an embedded database that Step 0.8 showed.
 
-H2 is a Java library that runs inside the JVM of the program itself. It is the single dependency in `pom.xml`, it keeps its data in a local file (`data/parcelpoint.mv.db`), and the program creates its own table on the first run with `CREATE TABLE IF NOT EXISTS`. So nothing has to be installed, started or configured, and running `java -jar` is enough. The limit is that only one process can open the database file at a time. While the H2 Shell held it, H2 locked the file, and ParcelPoint could not even start (`Database may be already in use`). An embedded database therefore cannot be shared by several programs or users at the same time without moving to server mode, which would break the rule.
+H2 is a Java library that runs inside the JVM of the program, it is the one dependency in `pom.xml`, and it keeps its data in a local file, `data/parcelpoint.mv.db`. The program creates its own table on the first run with `CREATE TABLE IF NOT EXISTS`, so nothing has to be installed, started or configured, and `java -jar` is enough. The limit that Step 0.8 showed is that only one program can open the database at a time, because H2 locks the file, so ParcelPoint could not start while the H2 Shell held it and failed with `Database may be already in use`. An embedded database therefore cannot be shared by several programs or users at once unless it moves to server mode, which would break the rule.
 
 4. State the data store that you would choose for your Project Phase 2 team, files or an embedded database, the requirement that drives the choice, and the package that will access it.
 
-I would choose an embedded database, H2. The driving requirement is that the data must stay after the program ends and stay correct while records are updated, such as a status that changes, the way a parcel changes from STORED to PICKED_UP. H2 gives a primary key that blocks duplicates, `MERGE` to update a single row in place, and SQL to search by any column, while still needing no separate server and only one library. Files would force us to rewrite the whole file on every change and to write our own parsing and searching code. As in ParcelPoint, only the `storage` package will access the data store, through one repository interface for each kind of object, and Main will choose the implementation.
+I would choose an embedded database, H2. The requirement that drives the choice is that the data must stay after the program ends and stay correct while records are updated, the way a parcel changes from STORED to PICKED_UP, and H2 gives a primary key against duplicates, `MERGE` to update one row in place, and SQL to search by any column, with no separate server and only one library. Files would force us to rewrite the whole file on every change and to write our own parsing and searching code. As in ParcelPoint, only the `storage` package will access the data store, through one repository interface for each kind of object, and Main will choose the implementation.
 
 ## AI usage declaration
 
